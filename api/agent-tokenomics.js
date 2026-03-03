@@ -3,19 +3,19 @@ export default async function handler(req, res) {
     return res.status(405).send("Method not allowed");
   }
 
-  const { staking, revenueShare } = req.body;
+  const { activity } = req.body;
 
   let score = 100;
   let flags = [];
 
-  if (staking) {
-    score -= 30;
-    flags.push("Staking may imply expectation of profits");
+  if (activity && activity.toLowerCase().includes("staking")) {
+    score -= 40;
+    flags.push("Staking model may trigger securities analysis (Howey risk)");
   }
 
-  if (revenueShare) {
-    score -= 40;
-    flags.push("Revenue sharing increases securities risk");
+  if (activity && activity.toLowerCase().includes("revenue")) {
+    score -= 30;
+    flags.push("Revenue sharing increases likelihood of investment contract classification");
   }
 
   return res.status(200).json({
