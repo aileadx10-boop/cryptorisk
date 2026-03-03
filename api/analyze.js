@@ -35,9 +35,17 @@ Make it detailed and legally structured.
 
     const data = await response.json();
 
-    res.status(200).json({
-      document: data.output[0].content[0].text
-    });
+    // Safe extraction
+    const text =
+      data.output_text ||
+      (data.output &&
+        data.output[0] &&
+        data.output[0].content &&
+        data.output[0].content[0] &&
+        data.output[0].content[0].text) ||
+      "No response generated.";
+
+    res.status(200).json({ document: text });
 
   } catch (error) {
     res.status(500).json({ error: "OpenAI request failed" });
