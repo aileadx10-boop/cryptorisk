@@ -5,25 +5,41 @@ export default async function handler(req, res) {
 
   const { company, country, activity } = req.body;
 
-  const document = `
-CRYPTO COMPLIANCE PACKAGE
+  const prompt = `
+You are a senior crypto regulatory lawyer.
+
+Generate a professional crypto compliance package including:
+1. Disclaimer
+2. Risk Disclosure
+3. Terms of Use
 
 Company: ${company}
 Country: ${country}
 Activity: ${activity}
 
--------------------------
-DISCLAIMER
-The information provided by ${company} does not constitute financial advice.
-
--------------------------
-RISK DISCLOSURE
-Cryptocurrency markets are volatile and involve significant risk.
-
--------------------------
-TERMS OF USE
-By accessing the services of ${company}, you agree to the following terms.
+Make it detailed and legally structured.
 `;
 
-  res.status(200).json({ document });
+  try {
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4.1-mini",
+        input: prompt
+      })
+    });
+
+    const data = await response.json();
+
+    res.status(200).json({
+      document: data.output[0].content[0].text
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: "OpenAI request failed" });
+  }
 }
