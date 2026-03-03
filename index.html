@@ -1,1 +1,29 @@
-<h1>It works</h1>
+<h1>Instant Crypto Compliance Audit</h1>
+
+<form id="auditForm">
+  <input type="text" id="company" placeholder="Company Name" required />
+  <input type="text" id="country" placeholder="Country" required />
+  <input type="text" id="activity" placeholder="Activity Type" required />
+  <button type="submit">Generate</button>
+</form>
+
+<pre id="result"></pre>
+
+<script>
+document.getElementById("auditForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+
+  const company = document.getElementById("company").value;
+  const country = document.getElementById("country").value;
+  const activity = document.getElementById("activity").value;
+
+  const res = await fetch("/api/analyze", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ company, country, activity })
+  });
+
+  const data = await res.json();
+  document.getElementById("result").innerText = data.document;
+});
+</script>
