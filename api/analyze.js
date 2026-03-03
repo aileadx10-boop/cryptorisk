@@ -35,19 +35,15 @@ Make it detailed and legally structured.
 
     const data = await response.json();
 
-    // Safe extraction
-    const text =
-      data.output_text ||
-      (data.output &&
-        data.output[0] &&
-        data.output[0].content &&
-        data.output[0].content[0] &&
-        data.output[0].content[0].text) ||
-      "No response generated.";
-
-    res.status(200).json({ document: text });
+    // DEBUG MODE – return full OpenAI response
+    res.status(200).json({
+      document: JSON.stringify(data, null, 2)
+    });
 
   } catch (error) {
-    res.status(500).json({ error: "OpenAI request failed" });
+    res.status(500).json({
+      error: "OpenAI request failed",
+      details: error.message
+    });
   }
 }
