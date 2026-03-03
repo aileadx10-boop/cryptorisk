@@ -17,7 +17,7 @@ document.getElementById("auditForm").addEventListener("submit", async function(e
   const country = document.getElementById("country").value;
   const activity = document.getElementById("activity").value;
 
-  const res = await fetch("/api/analyze", {
+   const res = await fetch("/api/orchestrator", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ company, country, activity })
