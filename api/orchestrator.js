@@ -1,108 +1,136 @@
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).send("Method not allowed");
-  }
-
-  const input = req.body;
-
-  const crawlerRes = await fetch(
-    "https://cryptorisk-omega.vercel.app/api/agent-crawler",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input)
+  try {
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method not allowed" });
     }
-  );
 
-  const tokenomicsRes = await fetch(
-    "https://cryptorisk-omega.vercel.app/api/agent-tokenomics",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input)
+    const input = req.body || {};
+
+    // --- Call Internal Agents ---
+
+    const crawlerRes = await fetch(
+      "https://cryptorisk-omega.vercel.app/api/agent-crawler",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input)
+      }
+    );
+
+    const tokenomicsRes = await fetch(
+      "https://cryptorisk-omega.vercel.app/api/agent-tokenomics",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input)
+      }
+    );
+
+    const crawler = await crawlerRes.json();
+    const tokenomics = await tokenomicsRes.json();
+
+    const finalScore = Math.round(
+      (crawler.score + tokenomics.score) / 2
+    );
+
+    // --- VARA Deterministic Classification Engine ---
+
+    const activity = (input.activity || "").toLowerCase();
+
+    let varaLicenseCategory = "No Clear VARA Trigger";
+    let varaRiskLevel = "Low";
+    let varaExplanation =
+      "No clearly regulated virtual asset activity detected under VARA framework.";
+    let recommendedAction =
+      "No immediate VARA licensing review required based on provided description.";
+
+    // 1️⃣ Exchange / Brokerage
+    if (
+      activity.includes("exchange") ||
+      activity.includes("broker") ||
+      activity.includes("trading platform") ||
+      activity.includes("order matching")
+    ) {
+      varaLicenseCategory = "Virtual Asset Exchange / Broker-Dealer";
+      varaRiskLevel = "License Likely Required";
+      varaExplanation =
+        "Operating a virtual asset exchange or brokerage platform generally falls under regulated Virtual Asset Service Provider (VASP) activities within Dubai.";
+      recommendedAction =
+        "Conduct structured assessment against VARA VASP license categories and initiate pre-application review.";
     }
-  );
 
-  const crawler = await crawlerRes.json();
-  const tokenomics = await tokenomicsRes.json();
+    // 2️⃣ Custody
+    if (
+      activity.includes("custody") ||
+      activity.includes("wallet service") ||
+      activity.includes("asset safekeeping")
+    ) {
+      varaLicenseCategory = "Custody Services";
+      varaRiskLevel = "High";
+      varaExplanation =
+        "Providing custody or safekeeping of virtual assets typically requires authorization under VARA custody service classifications.";
+      recommendedAction =
+        "Evaluate custody-specific regulatory obligations and capital requirements under VARA.";
+    }
 
-  const finalScore = Math.round(
-    (crawler.score + tokenomics.score) / 2
-  );
+    // 3️⃣ Staking / Yield
+    if (
+      activity.includes("staking") ||
+      activity.includes("yield") ||
+      activity.includes("rewards program")
+    ) {
+      varaLicenseCategory = "Staking / Yield-Generating Activity";
+      varaRiskLevel = "Moderate";
+      varaExplanation =
+        "Staking or yield-based mechanisms may trigger regulatory review depending on structure, marketing, and risk allocation.";
+      recommendedAction =
+        "Perform detailed structural analysis to determine whether activity constitutes regulated virtual asset service.";
+    }
 
-  // ---- NEW: Risk Classification Engine ----
+    // 4️⃣ Token Issuance
+    if (
+      activity.includes("token issuance") ||
+      activity.includes("token sale") ||
+      activity.includes("ico") ||
+      activity.includes("launch")
+    ) {
+      varaLicenseCategory = "Token Issuance / Distribution";
+      varaRiskLevel = "Moderate to High";
+      varaExplanation =
+        "Issuance or distribution of virtual assets may require regulatory review depending on economic rights and investor exposure.";
+      recommendedAction =
+        "Review token model and offering structure under applicable VARA virtual asset issuance guidance.";
+    }
 
-  let riskCategory = "Low";
+    // 5️⃣ Advisory / Consulting
+    if (
+      activity.includes("advisory") ||
+      activity.includes("consulting") ||
+      activity.includes("research")
+    ) {
+      varaLicenseCategory = "Advisory Services";
+      varaRiskLevel = "Low to Moderate";
+      varaExplanation =
+        "Pure advisory or research services without asset custody or transaction execution may fall outside core VASP licensing, subject to activity scope.";
+      recommendedAction =
+        "Confirm service scope does not extend into execution, custody, or asset intermediation.";
+    }
 
-  const activity = (input.activity || "").toLowerCase();
+    // --- Response ---
 
-  if (
-    activity.includes("staking") ||
-    activity.includes("yield") ||
-    activity.includes("revenue") ||
-    activity.includes("profit") ||
-    activity.includes("token sale") ||
-    activity.includes("dao")
-  ) {
-    riskCategory = "High – Securities Analysis Required";
+    return res.status(200).json({
+      overallScore: finalScore,
+      crawlerScore: crawler.score,
+      tokenomicsScore: tokenomics.score,
+      varaLicenseCategory,
+      varaRiskLevel,
+      varaExplanation,
+      recommendedAction
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      error: "Internal system error"
+    });
   }
-
-  if (finalScore < 40) {
-    riskCategory = "Very High – Likely Securities / Regulatory Exposure";
-  }
-// ---- VARA GPT Legal Engine (Strict JSON Mode) ----
-
-const openaiRes = await fetch("https://api.openai.com/v1/responses", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
-  },
-  body: JSON.stringify({
-    model: "gpt-4.1-mini",
-    response_format: { type: "json_object" },
-    input: `
-You are a UAE crypto regulatory lawyer specializing in VARA (Dubai).
-
-Analyze the following project:
-
-Activity: ${input.activity}
-Overall Risk Score: ${finalScore}
-Tokenomics Score: ${tokenomics.score}
-Crawler Score: ${crawler.score}
-
-Return ONLY valid JSON with this exact structure:
-
-{
-  "varaLicenseRisk": "Low | Moderate | High | License Likely Required",
-  "legalExplanation": "Professional paragraph explaining VARA exposure.",
-  "recommendedAction": "Clear next regulatory step under VARA."
 }
-
-Do not include any text outside the JSON.
-`
-  })
-});
-
-const openaiData = await openaiRes.json();
-
-let varaAnalysis;
-
-try {
-  varaAnalysis = JSON.parse(openaiData.output[0].content[0].text);
-} catch (error) {
-  varaAnalysis = {
-    varaLicenseRisk: "Analysis Error",
-    legalExplanation: "Automatic legal analysis could not be generated.",
-    recommendedAction: "Manual regulatory review required."
-  };
-}
-  return res.status(200).json({
-  overallScore: finalScore,
-  riskCategory,
-  crawler,
-  tokenomics,
-  varaLicenseRisk: varaAnalysis.varaLicenseRisk,
-  legalExplanation: varaAnalysis.legalExplanation,
-  recommendedAction: varaAnalysis.recommendedAction
-});
