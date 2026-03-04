@@ -1,35 +1,88 @@
-<h1>Instant Crypto Compliance Audit</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>VARA Risk Snapshot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: Arial; max-width: 800px; margin: 40px auto;">
 
-<form id="auditForm">
-  <input type="text" id="company" placeholder="Company Name" required />
-  <input type="text" id="country" placeholder="Country" required />
-  <input type="text" id="activity" placeholder="Activity Type" required />
-  <button type="submit">Generate</button>
-</form>
+  <h2>VARA Virtual Asset Risk Snapshot</h2>
 
-<pre id="result"></pre>
+  <form id="riskForm">
+    <label><strong>Describe Your Activity:</strong></label><br><br>
+    <textarea id="activity" rows="4" style="width:100%;" required></textarea><br><br>
 
-<script>
-document.querySelector("form").addEventListener("submit", async function (e) {
-  e.preventDefault();
+    <label><strong>Website URL:</strong></label><br><br>
+    <input type="url" id="website" style="width:100%;" required><br><br>
 
-  const activity = document.getElementById("activity").value;
+    <button type="submit" style="padding:10px 20px; cursor:pointer;">
+      Analyze Regulatory Exposure
+    </button>
+  </form>
 
-  const res = await fetch("/api/orchestrator", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ activity })
-  });
+  <hr style="margin:40px 0;">
 
-  const data = await res.json();
+  <div id="result" style="white-space: pre-line; font-size: 14px;"></div>
 
-  document.getElementById("result").innerText =
-    "Overall Score: " + data.overallScore +
-    "\n\nCrawler Score: " + data.crawlerScore +
-    "\nTokenomics Score: " + data.tokenomicsScore +
-    "\n\nVARA Category: " + data.varaLicenseCategory +
-    "\nVARA Risk Level: " + data.varaRiskLevel +
-    "\n\nExplanation: " + data.varaExplanation +
-    "\n\nRecommended Action: " + data.recommendedAction;
-});
-</script>
+  <div id="cta" style="margin-top:30px; display:none;">
+    <hr>
+    <p><strong>⚠️ Preliminary Automated Assessment Only</strong></p>
+    <p>
+      This snapshot does not constitute a formal VARA legal opinion.
+      Regulatory exposure may vary depending on operational structure,
+      token design, custody model, and jurisdictional scope.
+    </p>
+
+    <button onclick="requestFullReview()" style="padding:10px 20px; cursor:pointer;">
+      Request Full VARA Readiness Review
+    </button>
+  </div>
+
+  <script>
+    document.getElementById("riskForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const activity = document.getElementById("activity").value;
+      const website = document.getElementById("website").value;
+
+      document.getElementById("result").innerText = "Analyzing...";
+
+      try {
+        const res = await fetch("/api/orchestrator", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ activity, website })
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+          document.getElementById("result").innerText = "Error: " + data.error;
+          return;
+        }
+
+        document.getElementById("result").innerText =
+          "Overall Risk Score: " + data.overallScore +
+          "\n\nCrawler Score: " + data.crawlerScore +
+          "\nTokenomics Score: " + data.tokenomicsScore +
+          "\n\nVARA Category: " + data.varaLicenseCategory +
+          "\nVARA Risk Level: " + data.varaRiskLevel +
+          "\n\nExplanation: " + data.varaExplanation +
+          "\n\nRecommended Action: " + data.recommendedAction;
+
+        document.getElementById("cta").style.display = "block";
+
+      } catch (error) {
+        document.getElementById("result").innerText =
+          "System error. Please try again later.";
+      }
+    });
+
+    function requestFullReview() {
+      alert("Thank you. Our regulatory team will contact you regarding a full VARA readiness review.");
+    }
+  </script>
+
+</body>
+</html>
