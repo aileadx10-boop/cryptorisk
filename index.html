@@ -26,8 +26,10 @@ document.getElementById("auditForm").addEventListener("submit", async function(e
   const data = await res.json();
   document.getElementById("result").innerText =
   "Overall Score: " + data.overallScore +
-  "\nRisk Category: " + data.riskCategory +
-  "\n\nCrawler Score: " + data.crawler.score +
-  "\nTokenomics Score: " + data.tokenomics.score;
-});
+  "\n\nCrawler Score: " + data.crawlerScore +
+  "\nTokenomics Score: " + data.tokenomicsScore +
+  "\n\nVARA Category: " + data.varaLicenseCategory +
+  "\nVARA Risk Level: " + data.varaRiskLevel +
+  "\n\nExplanation: " + data.varaExplanation +
+  "\n\nRecommended Action: " + data.recommendedAction;
 </script>
