@@ -10,26 +10,26 @@
 <pre id="result"></pre>
 
 <script>
-document.getElementById("auditForm").addEventListener("submit", async function(e) {
+document.querySelector("form").addEventListener("submit", async function (e) {
   e.preventDefault();
 
-  const company = document.getElementById("company").value;
-  const country = document.getElementById("country").value;
   const activity = document.getElementById("activity").value;
 
-   const res = await fetch("/api/orchestrator", {
+  const res = await fetch("/api/orchestrator", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ company, country, activity })
+    body: JSON.stringify({ activity })
   });
 
   const data = await res.json();
+
   document.getElementById("result").innerText =
-  "Overall Score: " + data.overallScore +
-  "\n\nCrawler Score: " + data.crawlerScore +
-  "\nTokenomics Score: " + data.tokenomicsScore +
-  "\n\nVARA Category: " + data.varaLicenseCategory +
-  "\nVARA Risk Level: " + data.varaRiskLevel +
-  "\n\nExplanation: " + data.varaExplanation +
-  "\n\nRecommended Action: " + data.recommendedAction;
+    "Overall Score: " + data.overallScore +
+    "\n\nCrawler Score: " + data.crawlerScore +
+    "\nTokenomics Score: " + data.tokenomicsScore +
+    "\n\nVARA Category: " + data.varaLicenseCategory +
+    "\nVARA Risk Level: " + data.varaRiskLevel +
+    "\n\nExplanation: " + data.varaExplanation +
+    "\n\nRecommended Action: " + data.recommendedAction;
+});
 </script>
